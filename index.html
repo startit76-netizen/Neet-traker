@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET UG Syllabus Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen pb-12">
+
+    <header class="bg-slate-900 text-white py-6 px-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-wide">NEET UG SYLLABUS TRACKER</h1>
+                <p class="text-xs text-slate-400 mt-1">Official Rationalized Core Curriculum Checklist</p>
+            </div>
+            <div class="w-full sm:w-48 bg-slate-800 rounded-full h-4 relative border border-slate-700">
+                <div id="overall-progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                <span id="overall-progress-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">0% Done</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-8">
+        <div class="flex border-b border-gray-200 bg-white rounded-t-lg shadow-sm overflow-hidden">
+            <button onclick="switchTab('biology')" id="tab-biology" class="flex-1 py-3 font-bold text-sm text-center transition-colors border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50/30">BIOLOGY</button>
+            <button onclick="switchTab('chemistry')" id="tab-chemistry" class="flex-1 py-3 font-bold text-sm text-center text-gray-500 hover:text-slate-800 hover:bg-gray-50 transition-colors border-b-2 border-transparent">CHEMISTRY</button>
+            <button onclick="switchTab('physics')" id="tab-physics" class="flex-1 py-3 font-bold text-sm text-center text-gray-500 hover:text-slate-800 hover:bg-gray-50 transition-colors border-b-2 border-transparent">PHYSICS</button>
+        </div>
+
+        <div class="bg-white p-4 sm:p-6 rounded-b-lg shadow-sm border border-t-0 border-gray-100">
+            <div id="subject-content"></div>
+        </div>
+    </main>
+
+    <script>
+        // Full Rationalized 79-Chapter Data Map
+        const syllabusData = {
+            biology: {
+                "Class 11th": [
+                    "1. The Living World", "2. Biological Classification", "3. Plant Kingdom", "4. Animal Kingdom",
+                    "5. Morphology of Flowering Plants", "6. Anatomy of Flowering Plants", "7. Structural Organisation in Animals",
+                    "8. Cell: The Unit of Life", "9. Biomolecules", "10. Cell Cycle and Cell Division",
+                    "11. Photosynthesis in Higher Plants", "12. Respiration in Plants", "13. Plant Growth and Development",
+                    "14. Breathing and Exchange of Gases", "15. Body Fluids and Circulation", "16. Excretory Products and Elimination",
+                    "17. Locomotion and Movement", "18. Neural Control and Coordination", "19. Chemical Coordination and Integration"
+                ],
+                "Class 12th": [
+                    "1. Sexual Reproduction in Flowering Plants", "2. Human Reproduction", "3. Reproductive Health",
+                    "4. Principles of Inheritance and Variation", "5. Molecular Basis of Inheritance", "6. Evolution",
+                    "7. Human Health and Disease", "8. Microbes in Human Welfare",
+                    "9. Biotechnology: Principles and Processes", "10. Biotechnology and its Applications",
+                    "11. Organisms and Populations", "12. Ecosystem", "13. Biodiversity and Conservation"
+                ]
+            },
+            chemistry: {
+                "Class 11th": [
+                    "1. Some Basic Concepts of Chemistry", "2. Structure of Atom", "3. Chemical Thermodynamics",
+                    "4. Equilibrium", "5. Redox Reactions", "6. Classification of Elements & Periodicity",
+                    "7. Chemical Bonding & Molecular Structure", "8. p-Block Elements (Class 11)",
+                    "9. Organic Chemistry: Basic Principles & Techniques", "10. Hydrocarbons"
+                ],
+                "Class 12th": [
+                    "1. Solutions", "2. Electrochemistry", "3. Chemical Kinetics", "4. d- and f-Block Elements",
+                    "5. Coordination Compounds", "6. Haloalkanes and Haloarenes", "7. Alcohols, Phenols and Ethers",
+                    "8. Aldehydes, Ketones and Carboxylic Acids", "9. Amines", "10. Biomolecules",
+                    "11. Principles Related to Practical Chemistry"
+                ]
+            },
+            physics: {
+                "Class 11th": [
+                    "1. Units and Measurements", "2. Kinematics (Motion in Line/Plane)", "3. Laws of Motion",
+                    "4. Work, Energy and Power", "5. System of Particles & Rotational Motion", "6. Gravitation",
+                    "7. Mechanical Properties of Solids/Fluids", "8. Thermodynamics", "9. Kinetic Theory of Gases",
+                    "10. Oscillations and Waves"
+                ],
+                "Class 12th": [
+                    "1. Electrostatics", "2. Current Electricity", "3. Magnetic Effects of Current & Magnetism",
+                    "4. Electromagnetic Induction & Alternating Currents", "5. Electromagnetic Waves",
+                    "6. Optics (Ray and Wave Optics)", "7. Dual Nature of Matter and Radiation", "8. Atoms and Nuclei",
+                    "9. Electronic Devices (Semiconductors)", "10. Experimental Skills"
+                ]
+            }
+        };
+
+        let currentSubject = 'biology';
+
+        // Read or set up local user storage values
+        function getSavedProgress() {
+            const data = localStorage.getItem('neet_web_progress');
+            return data ? JSON.parse(data) : {};
+        }
+
+        function saveProgress(key, checked) {
+            const progress = getSavedProgress();
+            progress[key] = checked;
+            localStorage.setItem('neet_web_progress', JSON.stringify(progress));
+            calculateMetrics();
+        }
+
+        // Generate the spreadsheet-style layout tables
+        function renderSyllabus() {
+            const container = document.getElementById('subject-content');
+            const data = syllabusData[currentSubject];
+            const saved = getSavedProgress();
+            let html = '';
+
+            for (const [className, chapters] of Object.entries(data)) {
+                html += `
+                    <div class="mb-8">
+                        <h3 class="text-base font-bold text-slate-700 border-b border-gray-100 pb-2 mb-4 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> ${className}
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[500px]">
+                                <thead>
+                                    <tr class="bg-gray-50 border border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                        <th class="p-3 w-7/12">Chapter Name</th>
+                                        <th class="p-3 text-center w-1/12">Done</th>
+                                        <th class="p-3 text-center w-1/12">Rev 1</th>
+                                        <th class="p-3 text-center w-1/12">Rev 2</th>
+                                        <th class="p-3 text-center w-1/12">Rev 3</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 text-sm border border-t-0 border-gray-100">
+                `;
+
+                chapters.forEach(ch => {
+                    html += `<tr class="hover:bg-gray-50/60 transition-colors">
+                        <td class="p-3 font-medium text-gray-700">${ch}</td>`;
+                    
+                    const stages = ['Completed', 'Rev1', 'Rev2', 'Rev3'];
+                    stages.forEach(stage => {
+                        const key = `${currentSubject}-${className}-${ch}-${stage}`;
+                        const isChecked = saved[key] ? 'checked' : '';
+                        html += `
+                            <td class="p-3 text-center">
+                                <input type="checkbox" data-key="${key}" ${isChecked} onchange="saveProgress('${key}', this.checked)"
+                                    class="w-4 h-4 rounded text-emerald-600 border-gray-300 focus:ring-emerald-500 cursor-pointer accent-emerald-600">
+                            </td>`;
+                    });
+                    html += `</tr>`;
+                });
+
+                html += `</tbody></table></div></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function switchTab(subject) {
+            currentSubject = subject;
+            ['biology', 'chemistry', 'physics'].forEach(s => {
+                const tab = document.getElementById(`tab-${s}`);
+                if (s === subject) {
+                    tab.className = "flex-1 py-3 font-bold text-sm text-center border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50/30 transition-colors";
+                } else {
+                    tab.className = "flex-1 py-3 font-bold text-sm text-center text-gray-500 hover:text-slate-800 hover:bg-gray-50 transition-colors border-b-2 border-transparent";
+                }
+            });
+            renderSyllabus();
+        }
+
+        // Dynamically compute absolute progress metrics across the 79 total units
+        function calculateMetrics() {
+            const saved = getSavedProgress();
+            let totalChapters = 0;
+            let completedChapters = 0;
+
+            // Focus metrics evaluation strictly around base 'Completed' core state
+            for (const subject in syllabusData) {
+                for (const className in syllabusData[subject]) {
+                    syllabusData[subject][className].forEach(ch => {
+                        totalChapters++;
+                        const key = `${subject}-${className}-${ch}-Completed`;
+                        if (saved[key] === true) completedChapters++;
+                    });
+                }
+            }
+
+            const percent = Math.round((completedChapters / totalChapters) * 100) || 0;
+            document.getElementById('overall-progress-bar').style.width = `${percent}%`;
+            document.getElementById('overall-progress-text').innerText = `${percent}% Done`;
+        }
+
+        // Initial setup run
+        renderSyllabus();
+        calculateMetrics();
+    </script>
+</body>
+</html>
